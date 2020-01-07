@@ -112,7 +112,7 @@ int main() {
     hmmptr->setData(data);
     auto v = hmmptr->viterbi();
 
-//    std::cout << "viterbi\n" << xt::adapt(v) << std::endl;
+    std::cout << "viterbi\n" << xt::adapt(v) << std::endl;
 
     auto fwd = hmmptr->forward();
 //    std::cout << "fwd\n" << fwd << std::endl;
@@ -121,7 +121,7 @@ int main() {
 //    std::cout << "bkwd\n" << bkwd << std::endl;
 
     auto posterior = hmmptr->posterior();
-//    std::cout << "posterior\n" << posterior << std::endl;
+    std::cout << "posterior\n" << posterior << std::endl;
 
     auto baum_welch = hmmptr->baumWelch(500);
     return 0;
