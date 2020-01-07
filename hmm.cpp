@@ -126,7 +126,8 @@ xmatrix DiscreteHiddenMarkovModel::forward() {
         }
         scaler[t] += scaler[t - 1];
     }
-    return xt::transpose(xt::transpose(xt::log(alpha)) + scaler);
+    scaler.reshape({-1, 1});
+    return xt::log(alpha) + scaler;
 }
 
 xmatrix DiscreteHiddenMarkovModel::backward() {
@@ -153,7 +154,8 @@ xmatrix DiscreteHiddenMarkovModel::backward() {
         }
         scaler[t] += scaler[t+1];
     }
-    return xt::transpose(xt::transpose(xt::log(beta)) + scaler);
+    scaler.reshape({-1, 1});
+    return xt::log(beta) + scaler;
 }
 
 xmatrix DiscreteHiddenMarkovModel::posterior() {
@@ -178,15 +180,15 @@ OptimResult DiscreteHiddenMarkovModel::baumWelch(unsigned int niter) {
 
     xt::xtensor<double, 3> xi = xt::zeros<double>({T-1, M, M});
     xt::xtensor<double, 2> gamma = xt::zeros<double>({T, M});
-    double prev_lp = -1000;
+    double prev_lp = -100000;
     for (unsigned int i = 0; i < niter; ++i) {
         auto A = getTransitionMatrix();
         auto B = getEmissionMatrix();
         xmatrix alpha = forward();
         xmatrix beta = backward();
         // std::cout << "i=" << i << "; forward=\n" << alpha << "\nbackward=\n" << beta << std::endl;
-        double lp = logprob(alpha);
-        std::cout << "lp and prev_lp=" << lp << ", " << prev_lp << std::endl;
+        // double lp = logprob(alpha);
+        // std::cout << "lp and prev_lp=" << lp << ", " << prev_lp << std::endl;
 //        if (lp < prev_lp) {
 //            std::cerr << "prob got worse after " << i << " iterations" << std::endl;
 //            break;
@@ -195,7 +197,7 @@ OptimResult DiscreteHiddenMarkovModel::baumWelch(unsigned int niter) {
 //            std::cerr << "within tolerance after " << i << " iterations" << std::endl;
 //            break;
 //        }
-        prev_lp = lp;
+        // prev_lp = lp;
 
         for (unsigned int t = 0; t < T-1; ++t) {
             // Compute xi[t]
@@ -233,7 +235,7 @@ OptimResult DiscreteHiddenMarkovModel::baumWelch(unsigned int niter) {
         // std::cout << "denominator=\n" << gammasum << std::endl;
         // std::cout << "probs=\n" << xt::sum(xi, {0}) / xt::reshape_view(gammasum, {(int)M, 1}) << std::endl;
         xmatrix newA = xt::sum(xi, {0}) / xt::reshape_view(gammasum, {(int)M, 1});
-        auto a_norm = xt::norm_l2(A - newA);
+        // auto a_norm = xt::norm_l2(A - newA);
         setTransitionProbs(xt::sum(xi, {0}) / xt::reshape_view(gammasum, {(int)M, 1}));
 
 
@@ -248,18 +250,20 @@ OptimResult DiscreteHiddenMarkovModel::baumWelch(unsigned int niter) {
             }
             xt::view(newB, xt::all(), l) /= gammasum;
         }
-        auto b_norm = xt::norm_l2(B - newB);
+        // auto b_norm = xt::norm_l2(B - newB);
         setEmissionProbs(newB);
 
-        std::cout << "Parameter change=\n" << a_norm + b_norm << std::endl;
+        // std::cout << "Parameter change=\n" << a_norm + b_norm << std::endl;
 
         // std::cout << "_initial_distribution=\n" << _initial_distribution << std::endl;
 
-        //std::cout << "xtsum=\n" << xt::sum(xi, {0}) << std::endl;
-        //std::cout << "gammasum=\n" << xt::sum(xt::view(gamma, xt::range(0, T-2), xt::all()), {0}) << std::endl;
-        std::cout << "[" << i << "]\na*=\n" << _transition_matrix << std::endl;
-        std::cout << "b*=\n" << _emission_matrix << std::endl;
+        // std::cout << "xtsum=\n" << xt::sum(xi, {0}) << std::endl;
+        // std::cout << "gammasum=\n" << xt::sum(xt::view(gamma, xt::range(0, T-2), xt::all()), {0}) << std::endl;
+        // std::cout << "[" << i << "]\na*=\n" << _transition_matrix << std::endl;
+        // std::cout << "b*=\n" << _emission_matrix << std::endl;
     }
+     std::cout << "a*=\n" << _transition_matrix << std::endl;
+     std::cout << "b*=\n" << _emission_matrix << std::endl;
     return OptimResult{getTransitionMatrix(), getEmissionMatrix()};
 }
 
